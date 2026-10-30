@@ -1,6 +1,6 @@
 # Contact Lens and sentiment analysis lab: guide
 
-**Lab work.** Built in my own AWS account, on my own lab Amazon Connect instance (`asvinluan-connect-lab`). The Meridian Bank instance is not touched: AWS allows only two instances and the bank one stays as it is. Calls and customers are made up.
+**Lab work.** Built in my own AWS account, on my own lab Amazon Connect instance. The Meridian Bank instance is not touched: AWS allows only two instances and the bank one stays as it is. Calls and customers are made up.
 
 **Goal.** Be able to say, truthfully and with proof, "I turned on conversational analytics in Amazon Connect, took a call, and found its transcript, sentiment, summary and categories." This closes the Contact Lens gap for an Amazon Connect lead role.
 
@@ -51,7 +51,7 @@ Your mobile phone -> claimed Connect number -> lens-lab-flow
 
 Tick these off. The next part checks most of them for you.
 
-* A lab Connect instance (yours: `asvinluan-connect-lab`) with **a claimed phone number** (Channels > Phone numbers). Without a number you cannot phone in.
+* A lab Connect instance (your own) with **a claimed phone number** (Channels > Phone numbers). Without a number you cannot phone in.
 * **Call recordings stored in S3** (Data storage > Call recordings). It is on by default for a new instance.
 * **Conversational analytics enabled** on the instance. AWS says it is on by default for new instances. If it is off: Analytics tools > Enable conversational analytics > Save.
 * You are a user with the **Admin** security profile (it already has Contact search and the analytics permissions).
@@ -113,7 +113,7 @@ Git Bash: `./scripts/lens.sh flow` then the same with `--apply`
 
 ## Part 6. Make the call
 
-1. Open the CCP (the phone icon at the top right of the Connect admin website, or `https://asvinluan-connect-lab.my.connect.aws/ccp-v2/`). Allow the browser to use your microphone. Put on the headset.
+1. Open the CCP (the phone icon at the top right of the Connect admin website, or `https://YOUR-ALIAS.my.connect.aws/ccp-v2/`). Allow the browser to use your microphone. Put on the headset.
 2. Set your status to **Available**.
 3. From your mobile, phone the claimed number. You should hear the welcome message, then the CCP rings.
 4. **Accept** the call in the CCP.

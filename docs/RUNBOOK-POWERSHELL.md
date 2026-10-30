@@ -2,7 +2,7 @@
 
 One step at a time. Copy each box, paste, press Enter, check the "You should see" line. If anything differs, stop and send me the last lines.
 
-Lab work, in your own AWS account, on your own lab instance `asvinluan-connect-lab`. The Meridian Bank instance is never touched. The helper only works on the lab instance and refuses an instance whose alias looks like the bank's.
+Lab work, in your own AWS account, on your own lab instance (set its alias once per window: `$env:LENS_INSTANCE_ALIAS = "your-alias"`). The Meridian Bank instance is never touched. The helper only works on the lab instance and refuses an instance whose alias looks like the bank's.
 
 The helper scripts are optional. The guide (`LAB-GUIDE.md`) has the by-hand console steps, which are the dependable way. Every helper command that changes something is a **dry run** until you add `--apply`.
 

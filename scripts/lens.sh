@@ -11,7 +11,7 @@
 #   ./scripts/lens.sh results [--hours 6]
 #
 # Anything that changes AWS is a dry run unless you add --apply.
-# Set LENS_INSTANCE_ALIAS if your instance alias is not asvinluan-connect-lab.
+# Set LENS_INSTANCE_ALIAS to your own instance alias first.
 set -u
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -31,7 +31,7 @@ mobile phone -> Connect number -> lens-lab-flow (record + analytics on)
 |`rule-export --name N`|Show how AWS stored a rule|
 |`results [--hours N]`|List recent analysed calls|
 
-Safety: changes are a dry run until `--apply`; only the instance whose alias is `asvinluan-connect-lab` is used (override with `LENS_INSTANCE_ALIAS`); it refuses an instance that looks like the bank's; it never stores account or instance ids.
+Safety: changes are a dry run until `--apply`; only the instance whose alias you set in `LENS_INSTANCE_ALIAS` is used; it refuses an instance that looks like the bank's; it never stores account or instance ids.
 
 ## Tested, and not tested
 

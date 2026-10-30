@@ -14,7 +14,7 @@
   .\scripts\lens.ps1 results [--hours 6]
 
   Anything that changes AWS is a dry run unless you add --apply.
-  Set LENS_INSTANCE_ALIAS if your instance alias is not asvinluan-connect-lab.
+  Set LENS_INSTANCE_ALIAS to your own instance alias first.
 #>
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Continue'

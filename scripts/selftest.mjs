@@ -55,7 +55,7 @@ fail("stub: unhandled " + a.join(" "));
 `);
 
 const fresh = (over = {}) => {
-  const st = { alias: "asvinluan-connect-lab", lens: "true", queues: [], flows: [], rules: [], rpQueues: ["existing-queue"], contacts: [], keys: [], log: [], ...over };
+  const st = { alias: "demo-connect-lab", lens: "true", queues: [], flows: [], rules: [], rpQueues: ["existing-queue"], contacts: [], keys: [], log: [], ...over };
   writeFileSync(statePath, JSON.stringify(st));
 };
 const state = () => JSON.parse(readFileSync(statePath, "utf8"));
@@ -63,7 +63,7 @@ const run = (args, env = {}) => {
   try {
     const out = execFileSync(process.execPath, [lens, ...args], {
       encoding: "utf8",
-      env: { ...process.env, AWS_BIN: `node:${stubPath}`, STUB_STATE: statePath, ...env },
+      env: { ...process.env, AWS_BIN: `node:${stubPath}`, STUB_STATE: statePath, LENS_INSTANCE_ALIAS: "demo-connect-lab", ...env },
       stdio: ["ignore", "pipe", "pipe"],
     });
     return { code: 0, out };
@@ -79,6 +79,10 @@ const check = (name, cond, detail = "") => {
   console.log(`  ${cond ? "PASS" : "FAIL"}  ${name}${!cond && detail ? `\n          ${detail.slice(0, 300)}` : ""}`);
 };
 
+fresh();
+let r0 = run(["check", "--user", "agent1"], { LENS_INSTANCE_ALIAS: "" });
+console.log(`  ${/set your instance alias first/.test(r0.out) && r0.code !== 0 ? "PASS" : "FAIL"}  no alias set: stops and tells you how to set it`);
+if (!(/set your instance alias first/.test(r0.out) && r0.code !== 0)) process.exitCode = 1;
 console.log("== check (read-only)");
 fresh({ lens: "false" });
 let r = run(["check", "--user", "agent1"]);
@@ -174,7 +178,7 @@ console.log("== results");
 fresh();
 r = run(["results"]);
 check("no calls: tells you to make a test call", r.code === 0 && /No voice calls found/.test(r.out), r.out);
-fresh({ contacts: [{ Id: "abc-123", InitiationMethod: "INBOUND", InitiationTimestamp: "2026-10-29T01:00:00Z" }], keys: ["connect/asvinluan-connect-lab/Analysis/Voice/2026/10/29/abc-123_analysis.json"] });
+fresh({ contacts: [{ Id: "abc-123", InitiationMethod: "INBOUND", InitiationTimestamp: "2026-10-29T01:00:00Z" }], keys: ["connect/demo-connect-lab/Analysis/Voice/2026/10/29/abc-123_analysis.json"] });
 r = run(["results"]);
 check("finds the analysis file for a call", r.code === 0 && /abc-123/.test(r.out) && /FOUND/.test(r.out), r.out);
 fresh({ contacts: [{ Id: "zzz-999", InitiationMethod: "INBOUND", InitiationTimestamp: "2026-10-29T01:00:00Z" }] });

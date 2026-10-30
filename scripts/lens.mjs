@@ -12,7 +12,7 @@
 //
 // Safety:
 //   * Everything that CHANGES something is a dry run unless you add --apply.
-//   * It works on ONE instance, chosen by alias (default asvinluan-connect-lab).
+//   * It works on ONE instance, chosen by alias. Set LENS_INSTANCE_ALIAS to your own instance alias.
 //     It refuses to change an instance whose alias looks like the bank one.
 //   * Nothing is written to disk. No instance id or account id is stored anywhere.
 import { execFileSync, spawnSync } from "node:child_process";
@@ -21,7 +21,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const region = process.env.AWS_REGION || "ap-southeast-2";
-const wantedAlias = (process.env.LENS_INSTANCE_ALIAS || "asvinluan-connect-lab").trim();
+const PLACEHOLDER_ALIAS = "your-connect-instance";
+const wantedAlias = (process.env.LENS_INSTANCE_ALIAS || PLACEHOLDER_ALIAS).trim();
 const QUEUE_NAME = process.env.LENS_QUEUE_NAME || "lens-lab-queue";
 const FLOW_NAME = process.env.LENS_FLOW_NAME || "lens-lab-flow";
 const BANK_LOOKS_LIKE = /meridian|^mb[-_]/i;
@@ -129,6 +130,9 @@ const note = (s) => say(`  note     ${s}`);
 // Which instance?
 // ---------------------------------------------------------------------------
 function findInstance({ forChange }) {
+  if (wantedAlias === PLACEHOLDER_ALIAS) {
+    stop("set your instance alias first.  PowerShell:  $env:LENS_INSTANCE_ALIAS = \"your-alias\"   Git Bash:  export LENS_INSTANCE_ALIAS=your-alias   (the alias is the instance name shown in the Amazon Connect console).");
+  }
   let list;
   try {
     list = aws(["connect", "list-instances"]).InstanceSummaryList ?? [];
