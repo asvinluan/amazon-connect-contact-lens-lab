@@ -173,7 +173,7 @@ function cmdCheck() {
   const rec = tryAws(["connect", "list-instance-storage-configs", "--instance-id", id, "--resource-type", "CALL_RECORDINGS"], "call recording storage");
   const s3 = rec?.StorageConfigs?.[0]?.S3Config;
   if (s3) ok(`Call recordings are stored in S3 (bucket ${s3.BucketName})`);
-  else if (rec) todo("No call recording storage. Data storage > Call recordings must point at an S3 bucket");
+  else if (rec) todo("STOP, FIX THIS FIRST: no call recording storage. Calls will NOT be recorded or analysed and cannot be recovered. AWS console > Amazon Connect > your instance > Data storage > Call recordings > Edit > create a bucket (name all lowercase) > Save");
 
   const numbers = tryAws(["connect", "list-phone-numbers-v2", "--target-arn", inst.Arn], "phone numbers");
   const nums = numbers?.ListPhoneNumbersSummaryList ?? [];
@@ -358,6 +358,10 @@ function cmdFlow() {
   if (flows.some((f) => f.Name === FLOW_NAME)) {
     ok(`flow "${FLOW_NAME}" already exists. Not changed.`);
     return;
+  }
+  const recCfg = aws(["connect", "list-instance-storage-configs", "--instance-id", id, "--resource-type", "CALL_RECORDINGS"]);
+  if (!recCfg.StorageConfigs?.[0]?.S3Config) {
+    stop("this instance has no call recording storage, so calls would NOT be recorded. Fix it first: AWS console > Amazon Connect > your instance > Data storage > Call recordings > Edit > create a bucket (name all lowercase) > Save. Then run this again.");
   }
   const content = JSON.stringify(buildFlow(queue.Arn));
   try {
