@@ -1,0 +1,7 @@
+{
+  "source": ["aws.connect"],
+  "detail-type": ["conversational analytics Post Call Rules Matched"],
+  "detail": {
+    "ruleName": ["Complaint", "Escalation", "Negative Sentiment"]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "note": "Each entry becomes one Contact Lens category. 'words' are matched in what the CUSTOMER says (exact words, any one of them). 'sentiment' matches the customer's overall sentiment. Names may use letters, digits, dot, underscore and hyphen only (no spaces). Edit freely, then run: lens categories",
+  "categories": [
+    {
+      "name": "Complaint",
+      "words": ["complaint", "complain", "not happy", "unacceptable", "disappointed", "terrible"]
+    },
+    {
+      "name": "Escalation",
+      "words": ["speak to a manager", "supervisor", "escalate", "your manager", "someone senior"]
+    },
+    {
+      "name": "Billing-Issue",
+      "words": ["bill", "invoice", "charged twice", "overcharged", "wrong amount"]
+    },
+    {
+      "name": "Technical-Issue",
+      "words": ["not working", "error message", "cannot log in", "crashed", "outage", "internet is down"]
+    },
+    {
+      "name": "Refund-Request",
+      "words": ["refund", "money back", "reimburse", "reimbursement"]
+    },
+    {
+      "name": "Negative-Sentiment",
+      "sentiment": "NEGATIVE"
+    }
+  ]
+}

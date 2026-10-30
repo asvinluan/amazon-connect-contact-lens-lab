@@ -1,0 +1,68 @@
+# Fake customer calls: five role-play scripts
+
+Use these in Part 6 of the guide. You are the customer on your mobile phone and the agent in the CCP (use a headset). Speak naturally and in whole sentences; read slowly. Each call is about one to two minutes. The words in **bold** are the ones the categories listen for.
+
+Make **one call per category** so you can test the filters. Between scripts, close the contact in the CCP.
+
+---
+
+## Call 1. Complaint + negative sentiment
+
+**Customer:** Hello. I want to make a **complaint**. I am **not happy** at all. This is **unacceptable**.
+**Agent:** I am sorry to hear that. Can you tell me what happened?
+**Customer:** I waited three weeks for my order and nobody told me anything. I am really **disappointed** and frustrated.
+**Agent:** I understand, and I apologise. Let me find your order now.
+**Customer:** Thank you. That would help. I just want it sorted.
+**Agent:** I have found it, and I will make sure it ships today.
+**Customer:** Okay. Thanks for your help.
+
+*Expect:* Complaint, Negative Sentiment.
+
+## Call 2. Escalation
+
+**Customer:** Hi. I have called twice already and nothing has changed. I want to **speak to a manager**.
+**Agent:** I can help. Can I ask what the problem is first?
+**Customer:** No. I need a **supervisor**. I will **escalate** this if I have to.
+**Agent:** Understood. I will note it and ask a supervisor to call you back today.
+**Customer:** Fine. Please do that.
+
+*Expect:* Escalation (and probably Negative Sentiment).
+
+## Call 3. Billing issue
+
+**Customer:** Hello. My **bill** this month looks wrong. I think I was **charged twice**.
+**Agent:** Let me check your account. Which month is it?
+**Customer:** This month. The **invoice** shows the same amount two times, so I was **overcharged**.
+**Agent:** You are right. I can see two charges. I will reverse one.
+**Customer:** Great, thank you very much.
+
+*Expect:* Billing Issue. Sentiment should end positive, which makes a good sentiment shift to search for.
+
+## Call 4. Technical issue
+
+**Customer:** Hi. My service is **not working**. I get an **error message** every time I try to **log in**. Actually I **cannot log in** at all.
+**Agent:** I am sorry. Let me look. Have you tried resetting the password?
+**Customer:** Yes. It **crashed** again after that. Our **internet is down** too, I think.
+**Agent:** Thank you. I am raising a technical ticket now.
+**Customer:** Thanks. Please be quick.
+
+*Expect:* Technical Issue.
+
+## Call 5. Refund request
+
+**Customer:** Hello. I would like a **refund** for my last order. It arrived broken.
+**Agent:** I am sorry about that. I can arrange that.
+**Customer:** I want my **money back**, please. I do not want a replacement.
+**Agent:** No problem. I will process the refund today.
+**Customer:** Thank you. That is all I needed.
+
+*Expect:* Refund Request.
+
+---
+
+## Tips
+
+* Say the key words exactly as written. The rules match exact words in what the **customer** says, not the agent.
+* A quiet line or mumbling hurts the transcript. Use a headset.
+* Speak for at least a minute; very short calls may give thin results.
+* Never say real personal details, card numbers or passwords on these calls.

@@ -1,0 +1,13 @@
+# Never commit real values: account ids, instance names, tokens
+*.tfvars
+.env
+.env.*
+
+# Node, if you add tooling later
+node_modules/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.bak
