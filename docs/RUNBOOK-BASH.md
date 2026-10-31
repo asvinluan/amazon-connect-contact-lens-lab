@@ -48,11 +48,17 @@ You should see your own lab account. If not: `aws configure` or `aws sso login`.
 export AWS_REGION=ap-southeast-2
 ```
 
+Then set your Connect instance alias (the name shown in the Amazon Connect console) once in this window:
+
+```bash
+export LENS_INSTANCE_ALIAS=your-alias
+```
+
 ```bash
 ./scripts/lens.sh check --user YOUR_LOGIN
 ```
 
-Replace `YOUR_LOGIN` with your Connect user name. You should see lines starting OK or ACTION. Fix each ACTION line (the guide, Part 2) before going on.
+Replace `YOUR_LOGIN` with your Connect user name. You should see lines starting OK or ACTION. Fix each ACTION line (the guide, Part 2) before going on. **The call recording storage line is a stop sign.** If it says there is no call recording storage, fix it first (AWS console > Amazon Connect > your instance > Data storage > Call recordings > Edit > create a bucket, name all lowercase > Save). Without it, calls are NOT recorded and cannot be recovered.
 
 ## Step 4. Queue and agent
 

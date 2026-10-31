@@ -26,7 +26,7 @@ The ServiceNow ideas from my notes are kept, as a **design** (`SERVICENOW-IDEAS.
 |Transcript|The call as text, with who said what and when.|
 |Speaker separation|Agent and customer are labelled separately in the transcript.|
 |Sentiment|Positive, neutral or negative, scored for each speaker. The scale is -5 (most negative) to +5 (most positive).|
-|Category|A label put on a call when it matches a rule, for example "Refund Request" when the customer says "refund".|
+|Category|A label put on a call when it matches a rule, for example "Refund-Request" when the customer says "refund".|
 |Post-call analytics|The analysis is done after the call ends and the agent finishes after-call work. This lab uses it. It is the cheaper mode.|
 |Real-time analytics|The analysis runs during the call, so a supervisor could watch. It costs more. Optional.|
 |Contact search|The page where you find a past call: Analytics and optimization > Contact search.|
@@ -69,7 +69,7 @@ Run the helper. It only reads.
 PowerShell: `.\scripts\lens.ps1 check --user YOUR_LOGIN`
 Git Bash: `./scripts/lens.sh check --user YOUR_LOGIN`
 
-`YOUR_LOGIN` is the name you sign in to Connect with. You should see lines starting `OK` or `ACTION`. Fix every `ACTION` line before going on. If AWS blocks the helper, do the same checks by hand in the console using the list in Part 2.
+`YOUR_LOGIN` is the name you sign in to Connect with. You should see lines starting `OK` or `ACTION`. Fix every `ACTION` line before going on. **The call recording storage line is a stop sign:** with no recording bucket (Data storage > Call recordings), calls are NOT recorded or analysed and cannot be recovered afterwards. This cost the first run five calls. If AWS blocks the helper, do the same checks by hand in the console using the list in Part 2.
 
 ## Part 4. Queue and agent
 
@@ -104,7 +104,7 @@ Git Bash: `./scripts/lens.sh queue --user YOUR_LOGIN` then the same with `--appl
 
 Keep the analytics block **before** the call reaches the queue. A later block of the same kind overwrites an earlier one.
 
-**Or with the helper (untested against real AWS).** It builds the same flow and asks AWS to create it. If AWS rejects it, the helper says so and you use the hand steps above. `flow --print` writes the JSON so you could use the flow designer's Import instead.
+**Or with the helper (accepted by real AWS on 30 Oct 2026).** It builds the same flow and asks AWS to create it. If AWS rejects it, the helper says so and you use the hand steps above. `flow --print` writes the JSON so you could use the flow designer's Import instead.
 
 PowerShell: `.\scripts\lens.ps1 flow` then the same with `--apply`
 Git Bash: `./scripts/lens.sh flow` then the same with `--apply`
@@ -142,6 +142,18 @@ You should see, on the contact details page:
 
 If nothing appears after fifteen minutes, run `lens results` (read-only). It lists recent calls and whether an analysis file has been written, then see the troubleshooting table.
 
+## Part 7b. Optional: watch a call live (real-time analytics)
+
+Proven by hand on 31 Oct 2026. It costs extra per minute, so turn it off when you finish.
+
+1. Open `lens-lab-flow`. In the **Set recording, analytics and processing behavior** block choose **Real-time and post-contact analytics** (not Post-contact only). Save, then **Publish**.
+2. You need **two Connect users**. Connect does not let a user monitor their own call (the eye icon stays grey and says you cannot monitor yourself). Take the call as the agent in your normal window. In a private window sign in as a second user with a supervisor or admin security profile, and set that user to **Offline** so it does not take the call.
+3. In the second user's window open **Analytics and optimization > Real-time metrics > Agents**. While the call is **Connected**, click the **eye** on the agent's Voice row.
+4. You should see the transcript build live, with Agent and Customer lines.
+5. When finished, switch the block back to **Post-contact analytics**, Save and Publish.
+
+What this does not do: the six category rules are post-call rules, so categories do not appear live. Speech recognition makes mistakes on some words. The live view showed a name and address unmasked, while post-call transcripts showed them as `[PII]`.
+
 ## Part 8. Categories
 
 Categories apply to **new calls only**. Create them first, then make the test calls.
@@ -150,21 +162,21 @@ Categories apply to **new calls only**. Create them first, then make the test ca
 |-|-|
 |Complaint|complaint, complain, not happy, unacceptable, disappointed, terrible|
 |Escalation|speak to a manager, supervisor, escalate, your manager, someone senior|
-|Billing Issue|bill, invoice, charged twice, overcharged, wrong amount|
-|Technical Issue|not working, error message, cannot log in, crashed, outage, internet is down|
-|Refund Request|refund, money back, reimburse, reimbursement|
-|Negative Sentiment|the customer's overall sentiment is negative|
+|Billing-Issue|bill, invoice, charged twice, overcharged, wrong amount|
+|Technical-Issue|not working, error message, cannot log in, crashed, outage, internet is down|
+|Refund-Request|refund, money back, reimburse, reimbursement|
+|Negative-Sentiment|the customer's overall sentiment is negative|
 
 **By hand (console).** Analytics and optimization > Rules > Create rule. Choose the conversational analytics, **post-call** trigger. Add a condition on **words or phrases** spoken by the **customer** (or, for the last one, **sentiment: negative** for the customer). Action: **Assign contact category**, with the category name from the table. Save and publish. Repeat for each. (AWS renames menus now and then; look for the words rule, post-call and category.)
 
-**Or with the helper (untested against real AWS).** Dry run first, then `--apply`. Add `--eventbridge` if you want each category to also send an event, for the ServiceNow route in `SERVICENOW-IDEAS.md`.
+**Or with the helper (proven live on 30 Oct 2026).** Dry run first, then `--apply`. Add `--eventbridge` if you want each category to also send an event, for the ServiceNow route in `SERVICENOW-IDEAS.md`.
 
 PowerShell: `.\scripts\lens.ps1 categories` then the same with `--apply`
 Git Bash: `./scripts/lens.sh categories` then the same with `--apply`
 
 If AWS refuses the rule format, create one rule by hand and run `lens rule-export --name "Complaint"`. It prints exactly how AWS stored it, and the format in `scripts/lens.mjs` can be fixed from that.
 
-Honest note: in the AWS API a category takes its name from the **rule name**. I could not confirm this against a live account. After creating them, open Contact search > Add filter > Contact category and check the names show up.
+Confirmed live: in the AWS API a category takes its name from the **rule name**, and a rule name may only contain letters, digits, dot, underscore and hyphen (no spaces), so the categories are `Billing-Issue`, `Technical-Issue`, `Refund-Request` and `Negative-Sentiment`. Check them in Contact search > Add filter > Contact category. `Negative-Sentiment` needs the customer's OVERALL sentiment to be negative, so it only fires on a call that stays angry; a polite ending keeps it off.
 
 ## Part 9. Your five questions, answered
 
@@ -187,7 +199,7 @@ Categories become useful when they do something: a complaint opens a ticket, an 
 
 ## Part 11. What to say, and what not to say
 
-Only after you have seen the transcript, sentiment and a category on **your own** call, you can truthfully say: "Configured Amazon Connect conversational analytics in a lab instance: call recording, post-call transcripts, sentiment, summaries and rule-based categories, and searched calls by category and sentiment." Keep it labelled "lab". Do not put it under an employer's job entry, and do not claim an AWS certification you do not hold. Before the live proof, say "built and tested offline, not yet run live".
+Only after you have seen the transcript, sentiment and a category on **your own** call, you can truthfully say: "Configured Amazon Connect conversational analytics in a lab instance: call recording, post-call transcripts, per-line sentiment and six rule-based categories, verified on live test calls, with Agent and Customer labelled separately, an AI-generated call summary, and searchable by category." Keep it labelled "lab". Do not put it under an employer's job entry, and do not claim an AWS certification you do not hold. This lab has now been run live (30 Oct 2026); until you repeat it yourself, describe it as your own lab run, not as client work.
 
 ## Part 12. Cost and cleanup
 
@@ -198,9 +210,9 @@ Only after you have seen the transcript, sentiment and a category on **your own*
 
 ## Part 13. Limits and what is NOT proven
 
-* **Not run live.** Everything in the helper script was tested against a pretend AWS (it proves the logic, not that AWS accepts the JSON). The flow JSON and the category rule JSON in particular have not been sent to real AWS. The by-hand steps are the dependable path.
+* **Run live on 30 Oct 2026** (own lab instance, own mobile). Proven: the flow was accepted, calls were recorded and transcribed with per-line sentiment, and all six categories matched on test calls. Second run (31 Oct 2026) with a separate agent microphone: the transcript labelled Agent and Customer separately and an AI-generated summary appeared. Not proven: the ServiceNow route (design only), real-time categories, and that the redaction setting caused the `[PII]` masking. Lessons from the run: no recording storage means no recording (the helper now stops); rule names cannot contain spaces; the agent's routing profile must include the queue; say the agent lines into the CCP microphone and the customer lines into the phone (never read the words Agent or Customer aloud) to get separate speakers and a summary: AWS needs at least one spoken line from each side.
 * The console menu names come from AWS's documentation and may be renamed.
-* Real-time analytics is not set up.
+* Real-time analytics: proven by hand on 31 Oct 2026 (see Part 7b), but the helper does not build it, and the category rules are post-call only.
 * Sentiment trends across many calls need dashboards or data work that this lab does not do.
 * The ServiceNow part is a design, not code.
 

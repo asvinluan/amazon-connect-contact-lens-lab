@@ -20,7 +20,7 @@ Customer calls
 
 |Contact Lens signal|ServiceNow outcome|How in Connect|Status|
 |-|-|-|-|
-|Negative sentiment|Create incident|Rule "Negative Sentiment" + EventBridge action + Lambda|Category built; Lambda designed|
+|Negative sentiment|Create incident|Rule "Negative-Sentiment" + EventBridge action + Lambda|Category built; Lambda designed|
 |Escalation request|Create case (CSM)|Rule "Escalation" + EventBridge + Lambda|Category built; Lambda designed|
 |Compliance risk|Create task|Rule on words like "legal", "lawyer", "ombudsman" + task action|Designed (add the words to `rules/categories.json`)|
 |AI summary|Fill the work notes|Lambda reads the summary from the analysis output and writes it to the ticket|Designed|
