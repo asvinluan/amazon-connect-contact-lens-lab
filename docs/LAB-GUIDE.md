@@ -97,7 +97,7 @@ Git Bash: `./scripts/lens.sh queue --user YOUR_LOGIN` then the same with `--appl
    * Analytics: **Enable conversational analytics** and **Enable speech analytics**. Choose **Post-call analytics**.
    * Language: **English (Australia)**.
    * Sentiment: **on**. Generative AI summary: **on** if the box is there.
-   * Redaction: off for this lab (nothing real is said).
+   * Redaction: the flow the helper builds leaves it off (nothing real is said). In the flow built by hand on 31 Oct 2026 it was switched on; see Part 7b for what that showed.
 4. Add **Set working queue**: choose `lens-lab-queue`.
 5. Add **Transfer to queue**. Connect the error branches to a **Play prompt** ("Sorry, we cannot connect you") then **Disconnect**.
 6. Connect the blocks in this order: Welcome > Set recording and analytics > Set working queue > Transfer to queue. Save, then **Publish**.
@@ -152,7 +152,22 @@ Proven by hand on 31 Oct 2026. It costs extra per minute, so turn it off when yo
 4. You should see the transcript build live, with Agent and Customer lines.
 5. When finished, switch the block back to **Post-contact analytics**, Save and Publish.
 
-What this does not do: the six category rules are post-call rules, so categories do not appear live. Speech recognition makes mistakes on some words. The live view showed a name and address unmasked, while post-call transcripts showed them as `[PII]`.
+What this does not do: the six post-call category rules do not appear live (see Part 7c for live rules). Speech recognition makes mistakes on some words.
+
+**Redaction, as observed.** In the flow built by hand the PII redaction setting was on from the start. The post-call transcripts showed the name and address as `[PII]`; the live view showed them unmasked. That is what was seen, recorded as it happened. AWS lists redaction as available for certain languages only, so check yours before relying on it.
+
+## Part 7c. Live categories (rules that match during the call)
+
+**Status: built into the helper and tested offline with a pretend AWS. Not yet run live.** AWS's API documents that real-time analysis results can carry matched categories, so a rule that fires during the call should be possible. This part is how the lab will find out.
+
+1. Preview, then create the live rules (three of them: `Live-Complaint`, `Live-Escalation`, `Live-Negative-Sentiment`):
+   `lens categories --realtime` then `lens categories --realtime --apply`
+2. Turn on real-time analytics in the flow (Part 7b, step 1).
+3. Make a call and say a Complaint line from the customer side. Watch the contact in the second user's window (Part 7b, steps 2 and 3).
+4. Look at the contact's categories during the call. If a `Live-Complaint` category appears before you hang up, live categories work.
+5. If AWS refuses the rule, the helper says so and tells you to build one by hand and run `lens rule-export --realtime` to see how AWS stores it. Record the answer either way.
+
+Live rules use a different set of words from the post-call ones: only the customer's side is read, and sentiment is judged over the last 60 seconds of the call.
 
 ## Part 8. Categories
 
@@ -195,7 +210,9 @@ Confirmed live: in the AWS API a category takes its name from the **rule name**,
 
 ## Part 10. From insight to action (ServiceNow)
 
-Categories become useful when they do something: a complaint opens a ticket, an escalation alerts someone. `SERVICENOW-IDEAS.md` maps each Contact Lens signal to a ServiceNow action and says which parts are built (the categories and the event) and which are only designed (the Lambda that writes the ticket).
+Categories become useful when they do something: a complaint opens a ticket, an escalation alerts someone. `SERVICENOW-IDEAS.md` maps each Contact Lens signal to a ServiceNow action.
+
+**Built (offline), run live pending.** Create the rules with `lens categories --apply --eventbridge` so each one also sends an EventBridge event. The Lambda that receives the event is in the service desk lab (`amazon-connect-servicenow-service-desk`): it adds a note to the call's ticket, or opens an incident if the call has none, for an allow-list of rule names. It has unit tests against a fake ServiceNow. The live run (a real call, a real ticket) is the step that proves it.
 
 ## Part 11. What to say, and what not to say
 
@@ -210,11 +227,11 @@ Only after you have seen the transcript, sentiment and a category on **your own*
 
 ## Part 13. Limits and what is NOT proven
 
-* **Run live on 30 Oct 2026** (own lab instance, own mobile). Proven: the flow was accepted, calls were recorded and transcribed with per-line sentiment, and all six categories matched on test calls. Second run (31 Oct 2026) with a separate agent microphone: the transcript labelled Agent and Customer separately and an AI-generated summary appeared. Not proven: the ServiceNow route (design only), real-time categories, and that the redaction setting caused the `[PII]` masking. Lessons from the run: no recording storage means no recording (the helper now stops); rule names cannot contain spaces; the agent's routing profile must include the queue; say the agent lines into the CCP microphone and the customer lines into the phone (never read the words Agent or Customer aloud) to get separate speakers and a summary: AWS needs at least one spoken line from each side.
+* **Run live on 30 Oct 2026** (own lab instance, own mobile). Proven: the flow was accepted, calls were recorded and transcribed with per-line sentiment, and all six categories matched on test calls. Second run (31 Oct 2026) with a separate agent microphone: the transcript labelled Agent and Customer separately and an AI-generated summary appeared. Real-time run (31 Oct 2026): a supervisor in a second window watched the transcript build live with Agent and Customer lines; redaction was on in the flow built by hand and post-call transcripts showed `[PII]` while the live view showed the name unmasked (observed as seen). Not proven: the ServiceNow route end to end on a live call (built and unit-tested in the service desk lab), live categories (built into the helper, not yet run). Lessons from the run: no recording storage means no recording (the helper now stops); rule names cannot contain spaces; the agent's routing profile must include the queue; say the agent lines into the CCP microphone and the customer lines into the phone (never read the words Agent or Customer aloud) to get separate speakers and a summary: AWS needs at least one spoken line from each side.
 * The console menu names come from AWS's documentation and may be renamed.
-* Real-time analytics: proven by hand on 31 Oct 2026 (see Part 7b), but the helper does not build it, and the category rules are post-call only.
+* Real-time analytics: proven by hand on 31 Oct 2026 (see Part 7b); the helper does not build the flow block. Live category rules are built into the helper (Part 7c) and tested offline only.
 * Sentiment trends across many calls need dashboards or data work that this lab does not do.
-* The ServiceNow part is a design, not code.
+* The ServiceNow part is code in the service desk lab, unit-tested against a fake ServiceNow; it has not yet been run against a live call.
 
 ## Part 14. Troubleshooting
 

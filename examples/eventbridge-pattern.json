@@ -1,7 +1,10 @@
 {
   "source": ["aws.connect"],
-  "detail-type": ["conversational analytics Post Call Rules Matched"],
+  "detail-type": [
+    "conversational analytics Post Call Rules Matched",
+    "Contact Lens Post Call Rules Matched"
+  ],
   "detail": {
-    "ruleName": ["Complaint", "Escalation", "Negative Sentiment"]
+    "ruleName": ["Complaint", "Escalation", "Negative-Sentiment"]
   }
 }

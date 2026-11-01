@@ -1,29 +1,63 @@
 {
-  "note": "Each entry becomes one Contact Lens category. 'words' are matched in what the CUSTOMER says (exact words, any one of them). 'sentiment' matches the customer's overall sentiment. Names may use letters, digits, dot, underscore and hyphen only (no spaces). Edit freely, then run: lens categories",
+  "note": "Each entry becomes one Contact Lens category. 'words' are matched in what the CUSTOMER says (exact words, any one of them). 'sentiment' matches the customer's overall sentiment. Names may use letters, digits, dot, underscore and hyphen only (no spaces). Edit freely, then run: lens categories Entries with \"realtime\": true are ALSO created as a Live-<name> rule by: lens categories --realtime (they match while the call is still going).",
   "categories": [
     {
       "name": "Complaint",
-      "words": ["complaint", "complain", "not happy", "unacceptable", "disappointed", "terrible"]
+      "words": [
+        "complaint",
+        "complain",
+        "not happy",
+        "unacceptable",
+        "disappointed",
+        "terrible"
+      ],
+      "realtime": true
     },
     {
       "name": "Escalation",
-      "words": ["speak to a manager", "supervisor", "escalate", "your manager", "someone senior"]
+      "words": [
+        "speak to a manager",
+        "supervisor",
+        "escalate",
+        "your manager",
+        "someone senior"
+      ],
+      "realtime": true
     },
     {
       "name": "Billing-Issue",
-      "words": ["bill", "invoice", "charged twice", "overcharged", "wrong amount"]
+      "words": [
+        "bill",
+        "invoice",
+        "charged twice",
+        "overcharged",
+        "wrong amount"
+      ]
     },
     {
       "name": "Technical-Issue",
-      "words": ["not working", "error message", "cannot log in", "crashed", "outage", "internet is down"]
+      "words": [
+        "not working",
+        "error message",
+        "cannot log in",
+        "crashed",
+        "outage",
+        "internet is down"
+      ]
     },
     {
       "name": "Refund-Request",
-      "words": ["refund", "money back", "reimburse", "reimbursement"]
+      "words": [
+        "refund",
+        "money back",
+        "reimburse",
+        "reimbursement"
+      ]
     },
     {
       "name": "Negative-Sentiment",
-      "sentiment": "NEGATIVE"
+      "sentiment": "NEGATIVE",
+      "realtime": true
     }
   ]
 }

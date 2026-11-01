@@ -3,7 +3,7 @@
 //   node scripts/lens.mjs check                      read-only: is everything ready?
 //   node scripts/lens.mjs queue --user LOGIN [--apply]   create the lab queue, add it to your routing profile
 //   node scripts/lens.mjs flow [--apply | --print]       create the simple lab flow (or print its JSON)
-//   node scripts/lens.mjs categories [--apply] [--eventbridge]   create the Contact Lens categories
+//   node scripts/lens.mjs categories [--apply] [--eventbridge] [--realtime]   create the Contact Lens categories (--realtime: the Live- rules that match DURING a call)
 //   node scripts/lens.mjs rule-export [--name NAME]      show the rules already in your instance
 //   node scripts/lens.mjs results [--hours N]            read-only: recent calls and their analysis files
 //
@@ -396,6 +396,40 @@ function loadCategories() {
 
 const customerOnly = { LogicOperator: "AND", Filters: [{ Type: "ParticipantRole", Data: "CUSTOMER" }] };
 
+// While the call is still going, sentiment is judged over a recent window of the call
+// (AWS: RealTimeCallContactPeriodSeconds). 60 seconds is a lab choice.
+const LIVE_WINDOW_SECONDS = 60;
+const customerRecent = {
+  LogicOperator: "AND",
+  Filters: [
+    { Type: "ParticipantRole", Data: "CUSTOMER" },
+    { Type: "RealTimeCallContactPeriodSeconds", Data: { Past: LIVE_WINDOW_SECONDS } },
+  ],
+};
+
+// The same idea as ruleFunction, but for a rule that fires during the call
+// (trigger OnRealTimeCallAnalysisAvailable). The paths come from AWS's rule
+// function reference: $.ContactLens.RealTimeCall.ExactMatch.Transcript and
+// $.ContactLens.RealTimeCall.Sentiment.State.
+export function realtimeRuleFunction(category) {
+  const condition = category.sentiment
+    ? {
+        Operator: "EQUALS",
+        Operands: [category.sentiment],
+        ComparisonValue: "$.ContactLens.RealTimeCall.Sentiment.State",
+        FilterClause: customerRecent,
+        Negate: false,
+      }
+    : {
+        Operator: "CONTAINS_ANY",
+        Operands: category.words,
+        ComparisonValue: "$.ContactLens.RealTimeCall.ExactMatch.Transcript",
+        FilterClause: customerOnly,
+        Negate: false,
+      };
+  return { Version: "2022-11-25", RuleFunction: { Operator: "OR", Operands: [condition] } };
+}
+
 export function ruleFunction(category) {
   const condition = category.sentiment
     ? {
@@ -425,23 +459,44 @@ function cmdCategories() {
   const inst = findInstance({ forChange: true });
   const id = inst.Id;
   const withEvent = flag("eventbridge");
+  const live = flag("realtime");
+  const source = live ? "OnRealTimeCallAnalysisAvailable" : "OnPostCallAnalysisAvailable";
   say(`Instance "${inst.InstanceAlias}". ${apply ? "Applying." : "Dry run: nothing will change. Add --apply to do it."}`);
+  say(`Rules: ${live ? "LIVE (match while the call is going, named Live-...)" : "post-call (match after the call ends)"}`);
   say(`Each category also sends an EventBridge event: ${withEvent ? "yes" : "no (add --eventbridge to turn on the ServiceNow route)"}\n`);
-  const existing = new Set((aws(["connect", "list-rules", "--instance-id", id, "--event-source-name", "OnPostCallAnalysisAvailable"]).RuleSummaryList ?? []).map((r) => r.Name));
+  const existing = new Map((aws(["connect", "list-rules", "--instance-id", id, "--event-source-name", source]).RuleSummaryList ?? []).map((r) => [r.Name, r.RuleId]));
+  const wanted = loadCategories().filter((c) => !live || c.realtime);
   let failed = 0;
-  for (const c of loadCategories()) {
-    const rn = ruleName(c.name);
+  for (const c of wanted) {
+    const rn = ruleName(live ? `Live-${c.name}` : c.name);
+    const eventAction = { ActionType: "GENERATE_EVENTBRIDGE_EVENT", EventBridgeAction: { Name: `lens-lab-${live ? "live-" : ""}${slug(c.name)}` } };
     if (existing.has(rn)) {
-      ok(`"${rn}" already exists. Not changed.`);
+      // A rule made earlier without --eventbridge never sends an event. Add the action to it (nothing else changes).
+      const have = withEvent ? aws(["connect", "describe-rule", "--instance-id", id, "--rule-id", existing.get(rn)]).Rule : null;
+      if (have && !(have.Actions ?? []).some((a) => a.ActionType === "GENERATE_EVENTBRIDGE_EVENT")) {
+        try {
+          change(`add the EventBridge action to the existing rule "${rn}"`, [
+            "connect", "update-rule", "--instance-id", id, "--rule-id", existing.get(rn), "--name", rn,
+            "--function", typeof have.Function === "string" ? have.Function : JSON.stringify(have.Function),
+            "--actions", JSON.stringify([...(have.Actions ?? []), eventAction]),
+            "--publish-status", "PUBLISHED",
+          ]);
+        } catch (err) {
+          failed += 1;
+          say(`  FAILED   "${rn}": ${err.message}`);
+        }
+      } else {
+        ok(`"${rn}" already exists${withEvent ? " with its EventBridge action" : ""}. Not changed.`);
+      }
       continue;
     }
     const actions = [{ ActionType: "ASSIGN_CONTACT_CATEGORY", AssignContactCategoryAction: {} }];
-    if (withEvent) actions.push({ ActionType: "GENERATE_EVENTBRIDGE_EVENT", EventBridgeAction: { Name: `lens-lab-${slug(c.name)}` } });
+    if (withEvent) actions.push(eventAction);
     try {
-      change(`create category "${rn}"`, [
+      change(`create ${live ? "live " : ""}category "${rn}"`, [
         "connect", "create-rule", "--instance-id", id, "--name", rn,
-        "--trigger-event-source", "EventSourceName=OnPostCallAnalysisAvailable",
-        "--function", JSON.stringify(ruleFunction(c)),
+        "--trigger-event-source", `EventSourceName=${source}`,
+        "--function", JSON.stringify(live ? realtimeRuleFunction(c) : ruleFunction(c)),
         "--actions", JSON.stringify(actions),
         "--publish-status", "PUBLISHED",
       ]);
@@ -452,10 +507,11 @@ function cmdCategories() {
   }
   if (failed) {
     say("\nAWS did not accept the rule format. That part could not be tested here.");
-    say("Create the categories by hand (guide, Part 8), then run  lens rule-export  to see exactly how AWS stores one.");
+    say(`Create the rule by hand in the console, then run  lens rule-export${live ? " --realtime" : ""}  to see exactly how AWS stores one.`);
     process.exit(1);
   }
-  say(apply ? "\nDone. Categories apply to NEW calls only. Make a test call, then look in Contact search." : "\nNothing was changed.");
+  if (live) say(apply ? "\nDone. Live rules apply to NEW calls only. Make a test call and watch the contact while it is going (guide, Part 7c)." : "\nNothing was changed.");
+  else say(apply ? "\nDone. Categories apply to NEW calls only. Make a test call, then look in Contact search." : "\nNothing was changed.");
 }
 
 // ---------------------------------------------------------------------------
@@ -464,16 +520,17 @@ function cmdCategories() {
 function cmdRuleExport() {
   const inst = findInstance({ forChange: false });
   const id = inst.Id;
-  const list = aws(["connect", "list-rules", "--instance-id", id, "--event-source-name", "OnPostCallAnalysisAvailable"]).RuleSummaryList ?? [];
+  const source = flag("realtime") ? "OnRealTimeCallAnalysisAvailable" : "OnPostCallAnalysisAvailable";
+  const list = aws(["connect", "list-rules", "--instance-id", id, "--event-source-name", source]).RuleSummaryList ?? [];
   const name = option("name");
   if (!name) {
-    say(`Post-call rules in "${inst.InstanceAlias}" (${list.length}):`);
+    say(`${flag("realtime") ? "Live (real-time)" : "Post-call"} rules in "${inst.InstanceAlias}" (${list.length}):`);
     for (const r of list) say(`  ${r.Name}   [${r.PublishStatus}]`);
     say("\nTo see one in full:  lens rule-export --name \"Complaint\"");
     return;
   }
   const r = list.find((x) => x.Name === name);
-  if (!r) stop(`no post-call rule named "${name}".`);
+  if (!r) stop(`no ${flag("realtime") ? "live" : "post-call"} rule named "${name}".`);
   const d = aws(["connect", "describe-rule", "--instance-id", id, "--rule-id", r.RuleId]).Rule;
   say(JSON.stringify({ Name: d.Name, Function: d.Function, Actions: d.Actions, PublishStatus: d.PublishStatus }, null, 2));
 }
@@ -523,7 +580,7 @@ const commands = { check: cmdCheck, queue: cmdQueue, flow: cmdFlow, categories: 
 if (process.argv[1] && /lens\.mjs$/.test(process.argv[1])) {
   const run = commands[command];
   if (!run) {
-    console.log("Commands: check | queue --user LOGIN | flow | categories | rule-export | results");
+    console.log("Commands: check | queue --user LOGIN | flow | categories [--realtime] | rule-export [--realtime] | results");
     console.log("Changes need --apply. Without it you only see what would happen.");
     process.exit(command === "help" ? 0 : 1);
   }

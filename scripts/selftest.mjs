@@ -44,8 +44,9 @@ if (svc === "connect") {
     case "associate-routing-profile-queues": { const cfg = JSON.parse(f["queue-configs"]); const q = st.queues.find((x) => x.Id === cfg[0].QueueReference.QueueId); st.rpQueues.push(q.Name); out({}); }
     case "list-contact-flows": out({ ContactFlowSummaryList: st.flows.map((n) => ({ Name: n })) });
     case "create-contact-flow": { JSON.parse(f["content"]); st.flows.push(f["name"]); st.flowContent = f["content"]; out({ ContactFlowId: "f-1" }); }
-    case "list-rules": out({ RuleSummaryList: st.rules.map((r, i) => ({ Name: r.Name, RuleId: "r-" + i, PublishStatus: "PUBLISHED" })) });
+    case "list-rules": out({ RuleSummaryList: st.rules.map((r, i) => ({ r, i })).filter((x) => x.r.Trigger === "EventSourceName=" + f["event-source-name"]).map((x) => ({ Name: x.r.Name, RuleId: "r-" + x.i, PublishStatus: "PUBLISHED" })) });
     case "create-rule": { if (!/^[0-9a-zA-Z._-]*$/.test(f["name"])) fail("An error occurred (InvalidRequestException) when calling the CreateRule operation: Name fails to match the required pattern"); st.rules.push({ Name: f["name"], Function: f["function"], Actions: f["actions"], Trigger: f["trigger-event-source"], Status: f["publish-status"] }); out({ RuleId: "r-new" }); }
+    case "update-rule": { const i = Number(f["rule-id"].slice(2)); st.rules[i].Actions = f["actions"]; st.rules[i].Updated = (st.rules[i].Updated || 0) + 1; out({}); }
     case "describe-rule": { const r = st.rules[Number(f["rule-id"].slice(2))]; out({ Rule: { Name: r.Name, Function: r.Function, Actions: JSON.parse(r.Actions), PublishStatus: "PUBLISHED" } }); }
     case "search-contacts": out({ Contacts: st.contacts });
   }
@@ -169,6 +170,47 @@ check("second apply does nothing", r.code === 0 && calls("create-rule") === 6);
 fresh();
 run(["categories", "--apply", "--eventbridge"]);
 check("--eventbridge adds the EventBridge action", state().rules.every((x) => JSON.parse(x.Actions).some((a) => a.ActionType === "GENERATE_EVENTBRIDGE_EVENT")));
+console.log("== live (real-time) categories");
+fresh();
+r = run(["categories", "--realtime"]);
+check("live dry run changes nothing", /dry run/.test(r.out) && /LIVE/.test(r.out) && calls("create-rule") === 0, r.out);
+r = run(["categories", "--realtime", "--apply"]);
+check("live apply creates the 3 Live- rules only", r.code === 0 && calls("create-rule") === 3 && state().rules.every((x) => /^Live-/.test(x.Name)), r.out);
+const liveRules = state().rules;
+check("live rules trigger on real-time analysis", liveRules.every((x) => x.Trigger === "EventSourceName=OnRealTimeCallAnalysisAvailable" && JSON.parse(x.Actions)[0].ActionType === "ASSIGN_CONTACT_CATEGORY"));
+const liveWords = JSON.parse(liveRules.find((x) => x.Name === "Live-Complaint").Function).RuleFunction.Operands[0];
+check("live word rule uses the RealTimeCall transcript path, customer only", liveWords.ComparisonValue === "$.ContactLens.RealTimeCall.ExactMatch.Transcript" && liveWords.FilterClause.Filters[0].Data === "CUSTOMER" && liveWords.Operands.includes("complaint"));
+const liveSent = JSON.parse(liveRules.find((x) => x.Name === "Live-Negative-Sentiment").Function).RuleFunction.Operands[0];
+check("live sentiment rule uses a recent-seconds window", liveSent.ComparisonValue === "$.ContactLens.RealTimeCall.Sentiment.State" && liveSent.FilterClause.Filters.some((x) => x.Type === "RealTimeCallContactPeriodSeconds" && x.Data.Past === 60));
+r = run(["categories", "--realtime", "--apply"]);
+check("live second apply does nothing", r.code === 0 && calls("create-rule") === 3, r.out);
+r = run(["categories", "--apply"]);
+check("post-call rules are still created separately (6 more)", r.code === 0 && calls("create-rule") === 9, r.out);
+r = run(["rule-export", "--realtime"]);
+check("rule-export --realtime lists only the live rules", r.code === 0 && /Live-Complaint/.test(r.out) && !/\s+Billing-Issue/.test(r.out), r.out);
+fresh();
+run(["categories", "--realtime", "--apply", "--eventbridge"]);
+check("live rules can also send EventBridge events", state().rules.every((x) => JSON.parse(x.Actions).some((a) => a.ActionType === "GENERATE_EVENTBRIDGE_EVENT" && /^lens-lab-live-/.test(a.EventBridgeAction.Name))));
+fresh({ alias: "meridian-bank-connect" });
+r = run(["categories", "--realtime", "--apply"], { LENS_INSTANCE_ALIAS: "meridian-bank-connect" });
+check("live rules refuse the bank instance", r.code !== 0 && calls("create-rule") === 0, r.out);
+
+fresh();
+run(["categories", "--apply"]);
+console.log("== adding the EventBridge action to rules made earlier without it");
+fresh();
+run(["categories", "--apply"]);
+r = run(["categories", "--eventbridge"]);
+check("dry run with --eventbridge updates nothing", calls("update-rule") === 0 && /dry run/.test(r.out), r.out);
+r = run(["categories", "--apply", "--eventbridge"]);
+check("existing rules get the EventBridge action added, 6 updates, no new rules", r.code === 0 && calls("update-rule") === 6 && calls("create-rule") === 6, r.out);
+check("each updated rule keeps its category action and gains the event action", state().rules.every((x) => { const a = JSON.parse(x.Actions); return a[0].ActionType === "ASSIGN_CONTACT_CATEGORY" && a.some((y) => y.ActionType === "GENERATE_EVENTBRIDGE_EVENT"); }));
+check("each updated rule keeps its function untouched", JSON.parse(state().rules.find((x) => x.Name === "Complaint").Function).RuleFunction.Operands[0].Operands.includes("complaint"));
+r = run(["categories", "--apply", "--eventbridge"]);
+check("running it again changes nothing", r.code === 0 && calls("update-rule") === 6, r.out);
+
+fresh();
+run(["categories", "--apply"]);
 r = run(["rule-export"]);
 check("rule-export lists the rules", r.code === 0 && /Complaint/.test(r.out), r.out);
 r = run(["rule-export", "--name", "Complaint"]);

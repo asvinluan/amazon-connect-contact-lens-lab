@@ -1,6 +1,6 @@
 # From Contact Lens to ServiceNow: the design
 
-**Design only.** The first half (Contact Lens finds the signal and names it) is built in this lab. The second half (a Lambda that writes the ServiceNow record) is a design. The service desk lab (`amazon-connect-servicenow-service-desk`) already has a Lambda that writes ServiceNow incidents and requests during a call; this design reuses that idea after the call.
+**Built and unit-tested; not yet run on a live call.** The first half (Contact Lens finds the signal and names it) is built and was run live in this lab. The second half (a Lambda that writes the ServiceNow record) is now code in the service desk lab (`amazon-connect-servicenow-service-desk`: the `handleLensRule` function, the EventBridge rule in Terraform behind `lens_route_enabled`, and 12 unit tests against a fake ServiceNow). The service desk lab (`amazon-connect-servicenow-service-desk`) already has a Lambda that writes ServiceNow incidents and requests during a call; this design reuses that idea after the call.
 
 ## The flow from my notes
 
@@ -20,8 +20,8 @@ Customer calls
 
 |Contact Lens signal|ServiceNow outcome|How in Connect|Status|
 |-|-|-|-|
-|Negative sentiment|Create incident|Rule "Negative-Sentiment" + EventBridge action + Lambda|Category built; Lambda designed|
-|Escalation request|Create case (CSM)|Rule "Escalation" + EventBridge + Lambda|Category built; Lambda designed|
+|Negative sentiment|Create incident|Rule "Negative-Sentiment" + EventBridge action + Lambda|Category built; Lambda built (unit-tested), live run pending|
+|Escalation request|Create case (CSM)|Rule "Escalation" + EventBridge + Lambda|Category built; Lambda opens an incident today (a CSM case is designed)|
 |Compliance risk|Create task|Rule on words like "legal", "lawyer", "ombudsman" + task action|Designed (add the words to `rules/categories.json`)|
 |AI summary|Fill the work notes|Lambda reads the summary from the analysis output and writes it to the ticket|Designed|
 |Customer complaint|Route to the CSM team|Rule "Complaint" + Lambda sets the assignment group|Category built; routing designed|
@@ -38,12 +38,18 @@ Two design points I found while checking AWS's documentation:
 * `lens categories --eventbridge`: adds a "send an event" action to each rule.
 * `examples/eventbridge-pattern.json`: the pattern an EventBridge rule uses to catch the events for Complaint, Escalation and Negative Sentiment. The detail-type is `conversational analytics Post Call Rules Matched`.
 
-## What a build would add (not done)
+## What is built now (service desk lab)
 
-1. An EventBridge rule on the default bus with the pattern file.
-2. A target Lambda: take `contactArn`, call `DescribeContact`, read the summary, call the ServiceNow Table API as the service desk lab does (OAuth secret in Secrets Manager, never in code).
-3. A dead-letter queue and an alarm, as in the service desk lab.
-4. Keep tickets free of sensitive speech: turn on redaction, and write only what the ticket needs.
+1. An EventBridge rule on the default bus (off by default; `lens_route_enabled = true`). The pattern lists both event names AWS documents, because the two AWS pages disagree.
+2. The same Lambda that serves the phone flow handles the event: it reads the contact id from `contactArn`, checks the rule name against an allow list, then notes the call's existing ticket or opens an incident (safe to repeat: the contact id is stored on the ticket).
+3. It reuses the service desk lab's secret, retries, alarms and audit trail.
+4. The ticket holds only the rule name, when it matched and the contact id: no transcript, no caller details.
+
+## Still design only
+
+* Calling `DescribeContact` to add the caller number, summary or transcript to the ticket (the event has none of them).
+* Assignment groups, a CSM case for Escalation, and a dead-letter queue.
+* Which event name Amazon Connect really sends. The first live run records it (`lens event received` in the audit trail).
 
 ## Interview version (30 seconds)
 
