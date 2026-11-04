@@ -1,5 +1,7 @@
 # Amazon Connect Contact Lens and sentiment analysis lab
 
+[![ci](https://github.com/asvinluan/amazon-connect-contact-lens-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/asvinluan/amazon-connect-contact-lens-lab/actions/workflows/ci.yml)
+
 **Lab work.** A small, console-first lab in my own AWS account, on my own lab Amazon Connect instance. Not employer work. Calls and customers are made up.
 
 **What it teaches:** turn on conversational analytics (Contact Lens), take a test call, then find the transcript, sentiment timeline, speaker separation, recording, summary and categories in Contact search. Then see how those signals could open ServiceNow tickets.
