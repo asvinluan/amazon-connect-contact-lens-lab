@@ -1,6 +1,6 @@
 # From Contact Lens to ServiceNow: the design
 
-**Built and unit-tested; not yet run on a live call.** The first half (Contact Lens finds the signal and names it) is built and was run live in this lab. The second half (a Lambda that writes the ServiceNow record) is now code in the service desk lab (`amazon-connect-servicenow-service-desk`: the `handleLensRule` function, the EventBridge rule in Terraform behind `lens_route_enabled`, and 12 unit tests against a fake ServiceNow). The service desk lab (`amazon-connect-servicenow-service-desk`) already has a Lambda that writes ServiceNow incidents and requests during a call; this design reuses that idea after the call.
+**Built, unit-tested and run on a real call (5 Nov 2026).** The first half (Contact Lens finds the signal and names it) is built and was run live in this lab. The second half (a Lambda that writes the ServiceNow record) is now code in the service desk lab (`amazon-connect-servicenow-service-desk`: the `handleLensRule` function, the EventBridge rule in Terraform behind `lens_route_enabled`, and 12 unit tests against a fake ServiceNow). The service desk lab (`amazon-connect-servicenow-service-desk`) already has a Lambda that writes ServiceNow incidents and requests during a call; this design reuses that idea after the call.
 
 ## The flow from my notes
 
@@ -20,7 +20,7 @@ Customer calls
 
 |Contact Lens signal|ServiceNow outcome|How in Connect|Status|
 |-|-|-|-|
-|Negative sentiment|Create incident|Rule "Negative-Sentiment" + EventBridge action + Lambda|Category built; Lambda built (unit-tested), live run pending|
+|Negative sentiment|Create incident|Rule "Negative-Sentiment" + EventBridge action + Lambda|Run live 5 Nov 2026: opened an incident on a real angry call|
 |Escalation request|Create case (CSM)|Rule "Escalation" + EventBridge + Lambda|Category built; Lambda opens an incident today (a CSM case is designed)|
 |Compliance risk|Create task|Rule on words like "legal", "lawyer", "ombudsman" + task action|Designed (add the words to `rules/categories.json`)|
 |AI summary|Fill the work notes|Lambda reads the summary from the analysis output and writes it to the ticket|Designed|

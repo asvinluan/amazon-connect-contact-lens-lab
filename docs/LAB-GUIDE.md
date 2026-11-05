@@ -158,7 +158,7 @@ What this does not do: the six post-call category rules do not appear live (see 
 
 ## Part 7c. Live categories (rules that match during the call)
 
-**Status: built into the helper and tested offline with a pretend AWS. Not yet run live.** AWS's API documents that real-time analysis results can carry matched categories, so a rule that fires during the call should be possible. This part is how the lab will find out.
+**Status: proven live on 5 Nov 2026.** AWS's API documents that real-time analysis results can carry matched categories, and on a real call the live rules Live-Complaint, Live-Escalation and Live-Negative-Sentiment all showed on the contact while the call was still in progress. The live rules do not send an EventBridge event, so they do not open tickets; only the post-call rules do.
 
 1. Preview, then create the live rules (three of them: `Live-Complaint`, `Live-Escalation`, `Live-Negative-Sentiment`):
    `lens categories --realtime` then `lens categories --realtime --apply`
@@ -212,7 +212,7 @@ Confirmed live: in the AWS API a category takes its name from the **rule name**,
 
 Categories become useful when they do something: a complaint opens a ticket, an escalation alerts someone. `SERVICENOW-IDEAS.md` maps each Contact Lens signal to a ServiceNow action.
 
-**Built (offline), run live pending.** Create the rules with `lens categories --apply --eventbridge` so each one also sends an EventBridge event. The Lambda that receives the event is in the service desk lab (`amazon-connect-servicenow-service-desk`): it adds a note to the call's ticket, or opens an incident if the call has none, for an allow-list of rule names. It has unit tests against a fake ServiceNow. The live run (a real call, a real ticket) is the step that proves it.
+**Proven live on 5 Nov 2026.** Create the rules with `lens categories --apply --eventbridge` so each one also sends an EventBridge event. The Lambda that receives the event is in the service desk lab (`amazon-connect-servicenow-service-desk`): it adds a note to the call's ticket, or opens an incident if the call has none, for an allow-list of rule names. It has unit tests against a fake ServiceNow, and it worked on a real call: AWS sent the event name "Contact Lens Post Call Rules Matched"; on a calm complaint call with no ticket the note-only rules retried three times and created nothing; on an angry call Negative-Sentiment opened an incident and Complaint and Escalation each added a note to it, with no duplicate.
 
 ## Part 11. What to say, and what not to say
 
@@ -227,11 +227,11 @@ Only after you have seen the transcript, sentiment and a category on **your own*
 
 ## Part 13. Limits and what is NOT proven
 
-* **Run live on 30 Oct 2026** (own lab instance, own mobile). Proven: the flow was accepted, calls were recorded and transcribed with per-line sentiment, and all six categories matched on test calls. Second run (31 Oct 2026) with a separate agent microphone: the transcript labelled Agent and Customer separately and an AI-generated summary appeared. Real-time run (31 Oct 2026): a supervisor in a second window watched the transcript build live with Agent and Customer lines; redaction was on in the flow built by hand and post-call transcripts showed `[PII]` while the live view showed the name unmasked (observed as seen). Not proven: the ServiceNow route end to end on a live call (built and unit-tested in the service desk lab), live categories (built into the helper, not yet run). Lessons from the run: no recording storage means no recording (the helper now stops); rule names cannot contain spaces; the agent's routing profile must include the queue; say the agent lines into the CCP microphone and the customer lines into the phone (never read the words Agent or Customer aloud) to get separate speakers and a summary: AWS needs at least one spoken line from each side.
+* **Run live on 30 Oct 2026** (own lab instance, own mobile). Proven: the flow was accepted, calls were recorded and transcribed with per-line sentiment, and all six categories matched on test calls. Second run (31 Oct 2026) with a separate agent microphone: the transcript labelled Agent and Customer separately and an AI-generated summary appeared. Real-time run (31 Oct 2026): a supervisor in a second window watched the transcript build live with Agent and Customer lines; redaction was on in the flow built by hand and post-call transcripts showed `[PII]` while the live view showed the name unmasked (observed as seen). Run live on 5 Nov 2026: live categories matched during a call, and the ServiceNow route worked end to end on a real angry call. Lessons from the run: no recording storage means no recording (the helper now stops); rule names cannot contain spaces; the agent's routing profile must include the queue; say the agent lines into the CCP microphone and the customer lines into the phone (never read the words Agent or Customer aloud) to get separate speakers and a summary: AWS needs at least one spoken line from each side.
 * The console menu names come from AWS's documentation and may be renamed.
-* Real-time analytics: proven by hand on 31 Oct 2026 (see Part 7b); the helper does not build the flow block. Live category rules are built into the helper (Part 7c) and tested offline only.
+* Real-time analytics: proven by hand on 31 Oct 2026 (see Part 7b); the helper does not build the flow block. Live category rules (Part 7c) were run live on 5 Nov 2026.
 * Sentiment trends across many calls need dashboards or data work that this lab does not do.
-* The ServiceNow part is code in the service desk lab, unit-tested against a fake ServiceNow; it has not yet been run against a live call.
+* The ServiceNow part is code in the service desk lab. It was run on a real call on 5 Nov 2026; the live rules themselves send nothing to ServiceNow.
 
 ## Part 14. Troubleshooting
 
